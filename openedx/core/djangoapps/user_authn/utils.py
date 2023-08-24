@@ -10,7 +10,7 @@ from urllib.parse import urlparse  # pylint: disable=import-error
 from uuid import uuid4  # lint-amnesty, pylint: disable=unused-import
 
 from django.conf import settings
-from django.utils.http import url_has_allowed_host_and_scheme
+from django.utils import http
 from oauth2_provider.models import Application
 from rest_framework.status import HTTP_408_REQUEST_TIMEOUT
 
@@ -56,9 +56,7 @@ def is_safe_login_or_logout_redirect(redirect_to, request_host, dot_client_id, r
         if redirect_to in application.redirect_uris:
             login_redirect_whitelist.add(urlparse(redirect_to).netloc)
 
-
     url_has_allowed_host_and_scheme = http.url_has_allowed_host_and_scheme(
-
         redirect_to, allowed_hosts=login_redirect_whitelist, require_https=require_https
     )
 
