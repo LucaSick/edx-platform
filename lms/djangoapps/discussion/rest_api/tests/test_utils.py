@@ -358,6 +358,9 @@ class TestSendResponseNotifications(ForumsEnableMixin, CommentsServiceMockMixin,
         return f"{settings.DISCUSSIONS_MICROFRONTEND_URL}/{str(course_id)}/posts/{post_id}"
 
     def _register_subscriptions_endpoint(self):
+        """
+        Registers the endpoint for the subscriptions API
+        """
         mock_response = {
             'collection': [
                 {

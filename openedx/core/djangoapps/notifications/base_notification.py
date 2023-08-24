@@ -58,7 +58,7 @@ COURSE_NOTIFICATION_TYPES = {
         'web': False,
         'email': False,
         'push': False,
-        'info': 'For users who are following a post, when someone responds to that post.',
+        'info': '',
         'non_editable': [],
         'content_template': _('<{p}><{strong}>{replier_name}</{strong}> responded to a post you’re following: '
                               '<{strong}>{post_title}</{strong}></{p}>'),
@@ -75,7 +75,7 @@ COURSE_NOTIFICATION_TYPES = {
         'web': False,
         'email': False,
         'push': False,
-        'info': 'For users who are following a post, when someone comments on a response to that post.',
+        'info': '',
         'non_editable': [],
         'content_template': _('<{p}><{strong}>{replier_name}</{strong}> commented on {author_name}\'s response in '
                               'a post you’re following <{strong}>{post_title}</{strong}></{p}>'),

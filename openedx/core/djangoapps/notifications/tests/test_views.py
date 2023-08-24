@@ -224,7 +224,9 @@ class UserNotificationPreferenceAPITest(ModuleStoreTestCase):
                             'email': True,
                             'push': True,
                             'info': ''
-                        }
+                        },
+                        'response_on_followed_post': {'web': False, 'email': False, 'push': False, 'info': ''},
+                        'comment_on_followed_post': {'web': False, 'email': False, 'push': False, 'info': ''}
                     },
                     'non_editable': {
                         'core': ['web']
