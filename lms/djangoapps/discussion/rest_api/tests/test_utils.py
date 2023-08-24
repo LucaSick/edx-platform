@@ -172,7 +172,7 @@ def _get_mfe_url(course_id, post_id):
     """
     return f"{settings.DISCUSSIONS_MICROFRONTEND_URL}/{str(course_id)}/posts/{post_id}"
 
-
+@ddt.ddt
 class TestSendResponseNotifications(ForumsEnableMixin, CommentsServiceMockMixin, ModuleStoreTestCase):
     """
     Test for the send_response_notifications function
@@ -190,6 +190,7 @@ class TestSendResponseNotifications(ForumsEnableMixin, CommentsServiceMockMixin,
         self.thread_2 = ThreadMock(thread_id=2, creator=self.user_2, title='test thread 2')
         self.thread_3 = ThreadMock(thread_id=2, creator=self.user_1, title='test thread 3')
         self.course = CourseFactory.create()
+        self._register_subscriptions_endpoint()
 
     def test_send_notification_to_thread_creator(self):
         """
@@ -201,8 +202,8 @@ class TestSendResponseNotifications(ForumsEnableMixin, CommentsServiceMockMixin,
         # Post the form or do what it takes to send the signal
 
         send_response_notifications(self.thread, self.course, self.user_2, parent_id=None)
-        self.assertEqual(handler.call_count, 1)
-        args = handler.call_args[1]['notification_data']
+        self.assertEqual(handler.call_count, 2)
+        args = handler.call_args_list[0][1]['notification_data']
         self.assertEqual([int(user_id) for user_id in args.user_ids], [self.user_1.id])
         self.assertEqual(args.notification_type, 'new_response')
         expected_context = {
@@ -234,7 +235,7 @@ class TestSendResponseNotifications(ForumsEnableMixin, CommentsServiceMockMixin,
 
         send_response_notifications(self.thread, self.course, self.user_3, parent_id=self.thread_2.id)
         # check if 2 call are made to the handler i.e. one for the response creator and one for the thread creator
-        self.assertEqual(handler.call_count, 2)
+        self.assertEqual(handler.call_count, 3)
 
         # check if the notification is sent to the thread creator
         args_comment = handler.call_args_list[0][1]['notification_data']
@@ -277,7 +278,7 @@ class TestSendResponseNotifications(ForumsEnableMixin, CommentsServiceMockMixin,
         handler = Mock()
         USER_NOTIFICATION_REQUESTED.connect(handler)
         send_response_notifications(self.thread, self.course, self.user_1, parent_id=None)
-        self.assertEqual(handler.call_count, 0)
+        self.assertEqual(handler.call_count, 1)
 
     def test_comment_creators_own_response(self):
         """
@@ -295,7 +296,7 @@ class TestSendResponseNotifications(ForumsEnableMixin, CommentsServiceMockMixin,
 
         send_response_notifications(self.thread, self.course, self.user_3, parent_id=self.thread_2.id)
         # check if 1 call is made to the handler i.e. for the thread creator
-        self.assertEqual(handler.call_count, 1)
+        self.assertEqual(handler.call_count, 2)
 
         # check if the notification is sent to the thread creator
         args_comment = handler.call_args_list[0][1]['notification_data']
@@ -314,10 +315,48 @@ class TestSendResponseNotifications(ForumsEnableMixin, CommentsServiceMockMixin,
         )
         self.assertEqual(args_comment.app_name, 'discussion')
 
-    def test_send_notification_to_followers(self):
+    @ddt.data(
+        (None, 'response_on_followed_post'), (1, 'comment_on_followed_post')
+    )
+    @ddt.unpack
+    def test_send_notification_to_followers(self, parent_id, notification_type):
         """
         Test that the notification is sent to the followers of the thread
         """
+        self.register_get_comment_response({
+            'id': self.thread.id,
+            'thread_id': self.thread.id,
+            'user_id': self.thread.user_id
+        })
+        handler = Mock()
+        USER_NOTIFICATION_REQUESTED.connect(handler)
+
+        # Post the form or do what it takes to send the signal
+        notification_sender = DiscussionNotificationSender(self.thread, self.course, self.user_2, parent_id=parent_id)
+        notification_sender.send_response_on_followed_post_notification()
+        self.assertEqual(handler.call_count, 1)
+        args = handler.call_args[1]['notification_data']
+        # only sent to user_3 because user_2 is the one who created the response
+        self.assertEqual([self.user_3.id], args.user_ids)
+        self.assertEqual(args.notification_type, notification_type)
+        expected_context = {
+            'replier_name': self.user_2.username,
+            'post_title': 'test thread',
+            'course_name': self.course.display_name,
+        }
+        if parent_id:
+            expected_context['author_name'] = 'dummy'
+        self.assertDictEqual(args.context, expected_context)
+        self.assertEqual(
+            args.content_url,
+            self._get_mfe_url(self.course.id, self.thread.id)
+        )
+        self.assertEqual(args.app_name, 'discussion')
+
+    def _get_mfe_url(self, course_id, post_id):
+        return f"{settings.DISCUSSIONS_MICROFRONTEND_URL}/{str(course_id)}/posts/{post_id}"
+
+    def _register_subscriptions_endpoint(self):
         mock_response = {
             'collection': [
                 {
@@ -337,33 +376,9 @@ class TestSendResponseNotifications(ForumsEnableMixin, CommentsServiceMockMixin,
             'num_pages': 1,
             'subscriptions_count': 2,
             'corrected_text': None
+
         }
         self.register_get_subscriptions(self.thread.id, mock_response)
-        handler = Mock()
-        USER_NOTIFICATION_REQUESTED.connect(handler)
-
-        # Post the form or do what it takes to send the signal
-        notification_sender = DiscussionNotificationSender(self.thread, self.course, self.user_2, parent_id=None)
-        notification_sender.send_response_on_followed_post_notification()
-        self.assertEqual(handler.call_count, 1)
-        args = handler.call_args[1]['notification_data']
-        # only sent to user_3 because user_2 is the one who created the response
-        self.assertEqual([self.user_3.id], args.user_ids)
-        self.assertEqual(args.notification_type, 'response_on_followed_post')
-        expected_context = {
-            'replier_name': self.user_2.username,
-            'post_title': 'test thread',
-            'course_name': self.course.display_name,
-        }
-        self.assertDictEqual(args.context, expected_context)
-        self.assertEqual(
-            args.content_url,
-            self._get_mfe_url(self.course.id, self.thread.id)
-        )
-        self.assertEqual(args.app_name, 'discussion')
-
-    def _get_mfe_url(self, course_id, post_id):
-        return f"{settings.DISCUSSIONS_MICROFRONTEND_URL}/{str(course_id)}/posts/{post_id}"
 
 
 @ddt.ddt

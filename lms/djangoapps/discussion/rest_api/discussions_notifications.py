@@ -1,5 +1,5 @@
 """
-Disucssion notifications sender util.
+Discussion notifications sender util.
 """
 from openedx_events.learning.signals import USER_NOTIFICATION_REQUESTED
 from openedx_events.learning.data import UserNotificationData
@@ -44,7 +44,7 @@ class DiscussionNotificationSender:
             extra_context = {}
 
         notification_data = UserNotificationData(
-            user_ids=user_ids,
+            user_ids=[int(user_id) for user_id in user_ids],
             context={
                 "replier_name": self.creator.username,
                 "post_title": self.thread.title,
@@ -75,21 +75,38 @@ class DiscussionNotificationSender:
         if not self.parent_id and self.creator.id != int(self.thread.user_id):
             self._send_notification([self.thread.user_id], "new_response")
 
+    def _response_and_thread_has_same_creator(self) -> bool:
+        """
+        Check if response and main thread have same author.
+        """
+        return int(self.parent_response.user_id) == int(self.thread.user_id)
+
     def send_new_comment_notification(self):
         """
         Send notification to parent thread creator i.e. comment on the response.
         """
-        if self.parent_response and self.creator.id != int(self.thread.user_id):
+        #
+        if (
+            self.parent_response and
+            self.creator.id != int(self.thread.user_id)
+        ):
+            # use your if author of response is same as author of post.
+            author_name = "your" if self._response_and_thread_has_same_creator() else self.parent_response.username
             context = {
-                "author_name": self.parent_response.username,
+                "author_name": author_name,
             }
             self._send_notification([self.thread.user_id], "new_comment", extra_context=context)
 
     def send_new_comment_on_response_notification(self):
         """
         Send notification to parent response creator i.e. comment on the response.
+        Do not send notification if author of response is same as author of post.
         """
-        if self.parent_response and self.creator.id != int(self.parent_response.user_id):
+        if (
+            self.parent_response and
+            self.creator.id != int(self.parent_response.user_id) and not
+            self._response_and_thread_has_same_creator()
+        ):
             self._send_notification([self.parent_response.user_id], "new_comment_on_response")
 
     def send_response_on_followed_post_notification(self):
@@ -117,5 +134,11 @@ class DiscussionNotificationSender:
             page += 1
         # Remove duplicate users from the list of users to send notification
         users = list(set(users))
-
-        self._send_notification(users, "response_on_followed_post")
+        if not self.parent_id:
+            self._send_notification(users, "response_on_followed_post")
+        else:
+            self._send_notification(
+                users,
+                "comment_on_followed_post",
+                extra_context={"author_name": self.parent_response.username}
+            )

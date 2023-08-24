@@ -58,12 +58,30 @@ COURSE_NOTIFICATION_TYPES = {
         'web': False,
         'email': False,
         'push': False,
-        'info': 'Response on post',
+        'info': 'For users who are following a post, when someone responds to that post.',
         'non_editable': [],
         'content_template': _('<{p}><{strong}>{replier_name}</{strong}> responded to a post you’re following: '
                               '<{strong}>{post_title}</{strong}></{p}>'),
         'content_context': {
             'post_title': 'Post title',
+            'replier_name': 'replier name',
+        },
+        'email_template': '',
+    },
+    'comment_on_followed_post': {
+        'notification_app': 'discussion',
+        'name': 'comment_on_followed_post',
+        'is_core': False,
+        'web': False,
+        'email': False,
+        'push': False,
+        'info': 'For users who are following a post, when someone comments on a response to that post.',
+        'non_editable': [],
+        'content_template': _('<{p}><{strong}>{replier_name}</{strong}> commented on {author_name}\'s response in '
+                              'a post you’re following <{strong}>{post_title}</{strong}></{p}>'),
+        'content_context': {
+            'post_title': 'Post title',
+            'author_name': 'author name',
             'replier_name': 'replier name',
         },
         'email_template': '',

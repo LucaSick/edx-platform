@@ -82,7 +82,7 @@ from openedx.core.lib.exceptions import CourseNotFoundError, DiscussionNotFoundE
 from xmodule.course_block import CourseBlock
 from xmodule.modulestore.django import modulestore
 from xmodule.tabs import CourseTabList
-from .discussions_notifications import send_response_notifications
+from lms.djangoapps.discussion.rest_api.discussions_notifications import send_response_notifications
 
 from ..config.waffle import ENABLE_LEARNERS_STATS
 from ..django_comment_client.base.views import (
