@@ -436,17 +436,28 @@ class DiscussionNotificationSender:
         """
         return int(self.parent_response.user_id) == int(self.thread.user_id)
 
+    def _response_and_comment_has_same_creator(self):
+        return int(self.parent_response.attributes['user_id']) == self.creator.id
+
     def send_new_comment_notification(self):
         """
         Send notification to parent thread creator i.e. comment on the response.
         """
-        #
         if (
             self.parent_response and
             self.creator.id != int(self.thread.user_id)
         ):
             # use your if author of response is same as author of post.
-            author_name = "your" if self._response_and_thread_has_same_creator() else self.parent_response.username
+            # use 'their' if comment author is also response author.
+            author_name = (
+                "your"
+                if self._response_and_thread_has_same_creator()
+                else (
+                    "their"
+                    if self._response_and_comment_has_same_creator()
+                    else f"{self.parent_response.username}'s"
+                )
+            )
             context = {
                 "author_name": author_name,
             }
