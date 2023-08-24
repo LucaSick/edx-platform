@@ -1,11 +1,17 @@
 import logging
 
 from . import models, settings, utils
+"""
+Subscription model is used to get users who are subscribed to the main thread/post i.e.
+"""
 
 log = logging.getLogger(__name__)
 
 
 class Subscription(models.Model):
+    """
+    Subscription model is used to get users who are subscribed to the main thread/post i.e.
+    """
     # accessible_fields can be set and retrieved on the model
     accessible_fields = [
         '_id', 'subscriber_id', "source_id", "source_type"
@@ -15,7 +21,7 @@ class Subscription(models.Model):
     base_url = f"{settings.PREFIX}/subscriptions"
 
     @classmethod
-    def get(cls, thread_id, query_params):
+    def fetch(cls, thread_id, query_params):
         params = {
             'page': query_params.get('page', 1),
             'per_page': query_params.get('per_page', 20),

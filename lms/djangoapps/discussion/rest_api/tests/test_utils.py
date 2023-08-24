@@ -172,6 +172,7 @@ def _get_mfe_url(course_id, post_id):
     """
     return f"{settings.DISCUSSIONS_MICROFRONTEND_URL}/{str(course_id)}/posts/{post_id}"
 
+
 @ddt.ddt
 class TestSendResponseNotifications(ForumsEnableMixin, CommentsServiceMockMixin, ModuleStoreTestCase):
     """
