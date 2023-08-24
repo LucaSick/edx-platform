@@ -1,9 +1,9 @@
-import logging
-
-from . import models, settings, utils
 """
 Subscription model is used to get users who are subscribed to the main thread/post i.e.
 """
+import logging
+
+from . import models, settings, utils
 
 log = logging.getLogger(__name__)
 
@@ -22,6 +22,9 @@ class Subscription(models.Model):
 
     @classmethod
     def fetch(cls, thread_id, query_params):
+        """
+        Fetches the subscriptions for a given thread_id
+        """
         params = {
             'page': query_params.get('page', 1),
             'per_page': query_params.get('per_page', 20),
